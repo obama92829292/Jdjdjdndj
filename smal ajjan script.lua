@@ -1,12 +1,15 @@
-<meta name='viewport' content='width=device-width, initial-scale=1'/>local Players = game:GetService("Players")
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+-- Wait for Player and PlayerGui to be ready
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui", 10) -- Wait for PlayerGui with timeout
-
+if not player then
+    player = Players.LocalPlayer:Wait()
+end
+local playerGui = player:WaitForChild("PlayerGui", 10)
 if not playerGui then
     warn("PlayerGui not found!")
     return
@@ -105,7 +108,7 @@ for i, name in ipairs(tabs) do
     tabButton.Font = Enum.Font.GothamBold
     tabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     tabButton.BorderSizePixel = 0
-    tabButton.Size = UDim2.new(0.333, -5, 1, -10) -- Adjusted for even spacing
+    tabButton.Size = UDim2.new(0.333, -5, 1, -10)
     tabButton.Position = UDim2.new((i - 1) / #tabs, 5, 0, 5)
     tabButton.Active = true
     tabButton.Parent = tabsContainer
@@ -115,7 +118,7 @@ for i, name in ipairs(tabs) do
     frame.Name = name .. "Frame"
     frame.Size = UDim2.new(1, -20, 1, -80)
     frame.Position = UDim2.new(0, 10, 0, 80)
-    frame.CanvasSize = UDim2.new(0, 0, 0, 0) -- Will be updated dynamically
+    frame.CanvasSize = UDim2.new(0, 0, 0, 0)
     frame.ScrollBarThickness = 5
     frame.BackgroundTransparency = 1
     frame.Visible = i == 1
@@ -127,7 +130,6 @@ end
 for _, btn in ipairs(tabsContainer:GetChildren()) do
     if btn:IsA("TextButton") then
         btn.MouseButton1Click:Connect(function()
-            print("Tab clicked: " .. btn.Text) -- Debug
             for name, frame in pairs(tabFrames) do
                 frame.Visible = (name == btn.Text)
             end
@@ -156,18 +158,15 @@ local function createButton(parent, text, posY, callback)
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
     if callback then
         btn.MouseButton1Click:Connect(function()
-            print("Button clicked: " .. text) -- Debug
             callback()
         end)
     end
 
-    -- Update CanvasSize of parent ScrollingFrame
-    local canvasHeight = posY + 50 -- Button height + padding
+    local canvasHeight = posY + 50
     if parent and parent.CanvasSize and parent.CanvasSize.Y.Offset < canvasHeight then
         parent.CanvasSize = UDim2.new(0, 0, 0, canvasHeight)
     end
 
-    print("Created button: " .. text, btn) -- Debug
     return btn
 end
 
@@ -352,12 +351,7 @@ end
 
 local speedBtn = createButton(tabFrames.Main, "Speed Boost", 260, function()
     speedBoostEnabled = not speedBoostEnabled
-    print("Speed Boost toggled, speedBtn:", speedBtn)
-    if speedBtn then
-        speedBtn.BackgroundColor3 = speedBoostEnabled and Color3.fromRGB(30, 200, 30) or Color3.fromRGB(60, 60, 60)
-    else
-        warn("speedBtn is nil!")
-    end
+    speedBtn.BackgroundColor3 = speedBoostEnabled and Color3.fromRGB(30, 200, 30) or Color3.fromRGB(60, 60, 60)
     if speedBoostEnabled then
         runSpeedBoost()
     else
@@ -373,8 +367,9 @@ end)
 
 -- New Instant Steal
 local instantStealBtn = createButton(tabFrames.Main, "Instant Steal", 310, function()
-    print("Instant Steal clicked") -- Debug
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/onliengamerop/Steal-gui/refs/heads/main/instantstealbyajjan.lua.txt"))()
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/onliengamerop/Steal-gui/refs/heads/main/instantstealbyajjan.lua.txt"))()
+    end)
 end)
 
 -- Anti Trap
@@ -458,19 +453,22 @@ RunService.RenderStepped:Connect(function()
 end)
 
 local lockBtn = createButton(tabFrames.Visual, "Lock Base ESP", 10, function()
-    print("Lock Base ESP toggled") -- Debug
     activeLockTimeEsp = not activeLockTimeEsp
     lockBtn.BackgroundColor3 = activeLockTimeEsp and Color3.fromRGB(30, 200, 30) or Color3.fromRGB(60, 60, 60)
 end)
 
 -- Player ESP
 createButton(tabFrames.Visual, "ESP", 60, function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/onliengamerop/Steal-gui/refs/heads/main/esp1.txt"))()
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/onliengamerop/Steal-gui/refs/heads/main/esp1.txt"))()
+    end)
 end)
 
 -- Brainrot ESP
 createButton(tabFrames.Visual, "Brainrot ESP", 110, function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/HbJFXm31"))()
+    pcall(function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/HbJFXm31"))()
+    end)
 end)
 
 -- ServerHop
@@ -522,12 +520,10 @@ local function makeDraggable(frame)
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
-            print("Dragging started on " .. frame.Name) -- Debug
             local conn
             conn = input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
-                    print("Dragging ended on " .. frame.Name) -- Debug
                     conn:Disconnect()
                 end
             end)
@@ -556,16 +552,16 @@ makeDraggable(openButton)
 -- Toggle GUI Function
 local function toggleGUI(visible)
     mainFrame.Visible = visible
-    print("GUI toggled: " .. tostring(visible)) -- Debug
 end
 
 -- Connect Open and Close Buttons
 openButton.MouseButton1Click:Connect(function()
-    print("Open button clicked") -- Debug
     toggleGUI(true)
 end)
 
 closeButton.MouseButton1Click:Connect(function()
-    print("Close button clicked") -- Debug
     toggleGUI(false)
 end)
+
+-- Delay initialization to ensure game environment is ready
+task.wait(1)
