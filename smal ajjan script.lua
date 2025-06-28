@@ -1,11 +1,11 @@
-<meta name='viewport' content='width=device-width, initial-scale=1'/>local Players = game:GetService("Players")
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui", 10) -- Wait for PlayerGui with timeout
+local playerGui = player:WaitForChild("PlayerGui", 10)
 
 if not playerGui then
     warn("PlayerGui not found!")
@@ -105,7 +105,7 @@ for i, name in ipairs(tabs) do
     tabButton.Font = Enum.Font.GothamBold
     tabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     tabButton.BorderSizePixel = 0
-    tabButton.Size = UDim2.new(0.333, -5, 1, -10) -- Adjusted for even spacing
+    tabButton.Size = UDim2.new(0.333, -5, 1, -10)
     tabButton.Position = UDim2.new((i - 1) / #tabs, 5, 0, 5)
     tabButton.Active = true
     tabButton.Parent = tabsContainer
@@ -115,7 +115,7 @@ for i, name in ipairs(tabs) do
     frame.Name = name .. "Frame"
     frame.Size = UDim2.new(1, -20, 1, -80)
     frame.Position = UDim2.new(0, 10, 0, 80)
-    frame.CanvasSize = UDim2.new(0, 0, 0, 0) -- Will be updated dynamically
+    frame.CanvasSize = UDim2.new(0, 0, 0, 0)
     frame.ScrollBarThickness = 5
     frame.BackgroundTransparency = 1
     frame.Visible = i == 1
@@ -127,7 +127,6 @@ end
 for _, btn in ipairs(tabsContainer:GetChildren()) do
     if btn:IsA("TextButton") then
         btn.MouseButton1Click:Connect(function()
-            print("Tab clicked: " .. btn.Text) -- Debug
             for name, frame in pairs(tabFrames) do
                 frame.Visible = (name == btn.Text)
             end
@@ -155,19 +154,14 @@ local function createButton(parent, text, posY, callback)
     btn.Parent = parent
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
     if callback then
-        btn.MouseButton1Click:Connect(function()
-            print("Button clicked: " .. text) -- Debug
-            callback()
-        end)
+        btn.MouseButton1Click:Connect(callback)
     end
 
-    -- Update CanvasSize of parent ScrollingFrame
-    local canvasHeight = posY + 50 -- Button height + padding
+    -- Update CanvasSize
+    local canvasHeight = posY + 50
     if parent and parent.CanvasSize and parent.CanvasSize.Y.Offset < canvasHeight then
         parent.CanvasSize = UDim2.new(0, 0, 0, canvasHeight)
     end
-
-    print("Created button: " .. text, btn) -- Debug
     return btn
 end
 
@@ -181,7 +175,9 @@ end)
 UserInputService.JumpRequest:Connect(function()
     if infJump and player.Character then
         local hum = player.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+        if hum then
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
     end
 end)
 
@@ -212,79 +208,22 @@ end)
 RunService.Heartbeat:Connect(function()
     if godmode and player.Character then
         local hum = player.Character:FindFirstChildOfClass("Humanoid")
-        if hum then
-            if hum.Health < hum.MaxHealth then
-                hum.Health = hum.MaxHealth
-            end
-            if not hum:FindFirstChild("NoDamage") then
-                local tag = Instance.new("BoolValue")
-                tag.Name = "NoDamage"
-                tag.Parent = hum
-            end
+        if hum and hum.Health < hum.MaxHealth then
+            hum.Health = hum.MaxHealth
         end
     end
-end)
-
--- Instant Steal (Jump)
-createButton(tabFrames.Main, "Jump", 160, function()
-    local function setup()
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoid = character:WaitForChild("Humanoid")
-        local rootPart = character:WaitForChild("HumanoidRootPart")
-
-        local jumpVelocity = 120
-        local airBoost = false
-
-        pcall(function()
-            settings().Physics.AllowSleep = false
-        end)
-
-        humanoid.StateChanged:Connect(function(_, newState)
-            if newState == Enum.HumanoidStateType.Jumping and not airBoost then
-                airBoost = true
-                RunService.RenderStepped:Wait()
-                rootPart.Velocity = Vector3.new(0, jumpVelocity, 0)
-                task.wait(0.3)
-                airBoost = false
-            end
-        end)
-    end
-
-    player.CharacterAdded:Connect(function()
-        task.wait(1)
-        setup()
-    end)
-
-    if player.Character then
-        setup()
-    end
-end)
-
--- Anti Ragdoll
-createButton(tabFrames.Main, "Anti Ragdoll", 210, function()
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/onliengamerop/Steal-gui/refs/heads/main/notficationantiragdoll.txt"))()
-    end)
 end)
 
 -- Speed Boost
 local speedBoostEnabled = false
 local speedBoostConnection = nil
 
-local function buySpeedCoil()
-    local NetModule = ReplicatedStorage:WaitForChild("Packages"):FindFirstChild("Net")
-    if not NetModule then return end
-    local success, result = pcall(function()
-        local Net = require(NetModule)
-        local BuyFunction = Net:RemoteFunction("CoinsShopService/RequestBuy")
-        return BuyFunction:InvokeServer("Speed Coil")
-    end)
-end
-
 local function applyLoopSpeed()
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart")
-    local hum = char:WaitForChild("Humanoid")
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hrp or not hum then return end
 
     local old = hrp:FindFirstChild("LoopSpeedForce")
     if old then old:Destroy() end
@@ -309,30 +248,9 @@ local function applyLoopSpeed()
     return con
 end
 
-local function equipAndDrop()
-    local backpack = player:WaitForChild("Backpack")
-    local tool = backpack:FindFirstChild("Speed Coil")
-    if tool then
-        tool.Parent = player.Character
-        task.wait(0.3)
-        tool.Parent = workspace
-        task.wait(0.2)
-        local dropped = workspace:FindFirstChild("Speed Coil")
-        if dropped and dropped:FindFirstChild("Handle") then
-            local handle = dropped.Handle
-            handle.Transparency = 1
-            handle.CanCollide = false
-        end
-    end
-end
-
 local function runSpeedBoost()
     task.spawn(function()
-        buySpeedCoil()
-        task.wait(1)
         speedBoostConnection = applyLoopSpeed()
-        task.wait(0.5)
-        equipAndDrop()
     end)
 end
 
@@ -350,14 +268,9 @@ local function stopSpeedBoost()
     end
 end
 
-local speedBtn = createButton(tabFrames.Main, "Speed Boost", 260, function()
+local speedBtn = createButton(tabFrames.Main, "Speed Boost", 160, function()
     speedBoostEnabled = not speedBoostEnabled
-    print("Speed Boost toggled, speedBtn:", speedBtn)
-    if speedBtn then
-        speedBtn.BackgroundColor3 = speedBoostEnabled and Color3.fromRGB(30, 200, 30) or Color3.fromRGB(60, 60, 60)
-    else
-        warn("speedBtn is nil!")
-    end
+    speedBtn.BackgroundColor3 = speedBoostEnabled and Color3.fromRGB(30, 200, 30) or Color3.fromRGB(60, 60, 60)
     if speedBoostEnabled then
         runSpeedBoost()
     else
@@ -369,26 +282,6 @@ player.CharacterAdded:Connect(function()
     if speedBoostEnabled then
         task.delay(1, runSpeedBoost)
     end
-end)
-
--- New Instant Steal
-local instantStealBtn = createButton(tabFrames.Main, "Instant Steal", 310, function()
-    print("Instant Steal clicked") -- Debug
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/onliengamerop/Steal-gui/refs/heads/main/instantstealbyajjan.lua.txt"))()
-end)
-
--- Anti Trap
-createButton(tabFrames.Main, "Anti Trap", 360, function()
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/onliengamerop/Steal-gui/refs/heads/main/antitrap.lua.txt"))()
-    end)
-end)
-
--- Anti Steal
-createButton(tabFrames.Main, "Anti Steal", 410, function()
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/onliengamerop/Steal-gui/refs/heads/main/antisteal.txt"))()
-    end)
 end)
 
 -- Lock Base ESP
@@ -452,67 +345,15 @@ local function updateLock()
 end
 
 RunService.RenderStepped:Connect(function()
-    if activeLockTimeEsp then
-        pcall(updateLock)
-    end
+    pcall(updateLock)
 end)
 
 local lockBtn = createButton(tabFrames.Visual, "Lock Base ESP", 10, function()
-    print("Lock Base ESP toggled") -- Debug
     activeLockTimeEsp = not activeLockTimeEsp
     lockBtn.BackgroundColor3 = activeLockTimeEsp and Color3.fromRGB(30, 200, 30) or Color3.fromRGB(60, 60, 60)
 end)
 
--- Player ESP
-createButton(tabFrames.Visual, "ESP", 60, function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/onliengamerop/Steal-gui/refs/heads/main/esp1.txt"))()
-end)
-
--- Brainrot ESP
-createButton(tabFrames.Visual, "Brainrot ESP", 110, function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/HbJFXm31"))()
-end)
-
--- ServerHop
-createButton(tabFrames.Misc, "ServerHop", 10, function()
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Youifpg/Steal-a-Brianrot/refs/heads/main/Secrets%20finder.lua"))()
-    end)
-end)
-
--- Anti Kick
-createButton(tabFrames.Misc, "Anti Kick", 60, function()
-    pcall(function()
-        loadstring(game:HttpGet("https://pastefy.app/dAjYZBnq/raw"))()
-    end)
-end)
-
--- Check Server Version
-createButton(tabFrames.Misc, "Check Server Version", 110, function()
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/onliengamerop/Steal-gui/refs/heads/main/serverversion.txt"))()
-    end)
-end)
-
--- Clock Display
-local miscText = Instance.new("TextLabel")
-miscText.Size = UDim2.new(1, -20, 0, 60)
-miscText.Position = UDim2.new(0, 10, 0, 160)
-miscText.BackgroundTransparency = 1
-miscText.Font = Enum.Font.Gotham
-miscText.TextSize = 16
-miscText.TextColor3 = Color3.new(1, 1, 1)
-miscText.TextWrapped = true
-miscText.Parent = tabFrames.Misc
-
-RunService.RenderStepped:Connect(function()
-    miscText.Text = "🕒 " .. os.date("%H:%M:%S")
-end)
-
--- Update Misc tab CanvasSize
-tabFrames.Misc.CanvasSize = UDim2.new(0, 0, 0, 170)
-
--- Improved Dragging Function
+-- Dragging Function
 local function makeDraggable(frame)
     local dragging = false
     local dragInput, dragStart, startPos
@@ -522,12 +363,10 @@ local function makeDraggable(frame)
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
-            print("Dragging started on " .. frame.Name) -- Debug
             local conn
             conn = input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
-                    print("Dragging ended on " .. frame.Name) -- Debug
                     conn:Disconnect()
                 end
             end)
@@ -543,29 +382,26 @@ local function makeDraggable(frame)
                 startPos.X.Scale,
                 startPos.X.Offset + delta.X,
                 startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
+               ⅅ
+System: startPos.Y.Offset + delta.Y
             )
         end
     end)
 end
 
--- Apply Dragging to Main Frame and Open Button
+-- Apply Dragging
 makeDraggable(mainFrame)
 makeDraggable(openButton)
 
--- Toggle GUI Function
+-- Toggle GUI
 local function toggleGUI(visible)
     mainFrame.Visible = visible
-    print("GUI toggled: " .. tostring(visible)) -- Debug
 end
 
--- Connect Open and Close Buttons
 openButton.MouseButton1Click:Connect(function()
-    print("Open button clicked") -- Debug
     toggleGUI(true)
 end)
 
 closeButton.MouseButton1Click:Connect(function()
-    print("Close button clicked") -- Debug
     toggleGUI(false)
 end)
